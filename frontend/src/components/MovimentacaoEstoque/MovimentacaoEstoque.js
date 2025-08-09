@@ -29,17 +29,12 @@ function MovimentacaoEstoque() {
           axios.get(`${API_BASE_URL}/colaboradores`)
         ]);
 
-        // Ajuste para a estrutura da sua API (resposta com success e data)
         setItens(itensRes.data.success ? itensRes.data.data : []);
         setPostos(postosRes.data.success ? postosRes.data.data : []);
         setColaboradores(colaboradoresRes.data.success ? colaboradoresRes.data.data : []);
-
       } catch (error) {
         console.error('Erro ao carregar dados:', error);
         setErro('Erro ao carregar dados do servidor');
-        setItens([]);
-        setPostos([]);
-        setColaboradores([]);
       } finally {
         setCarregando(false);
       }
@@ -60,7 +55,6 @@ function MovimentacaoEstoque() {
     e.preventDefault();
     
     try {
-      // Validação dos campos
       if (!movimento.itemId || !movimento.postoId || !movimento.colaboradorId || movimento.quantidade <= 0) {
         throw new Error('Preencha todos os campos obrigatórios com valores válidos');
       }
@@ -78,7 +72,6 @@ function MovimentacaoEstoque() {
         throw new Error(`Quantidade indisponível em estoque (Disponível: ${item.quantidade})`);
       }
 
-      // Preparar dados para a API
       const dadosMovimento = {
         tipo: movimento.tipo,
         itemId: itemId,
@@ -89,7 +82,6 @@ function MovimentacaoEstoque() {
         observacao: movimento.observacao || null
       };
 
-      // Enviar para a API
       const [movimentoRes, itemRes] = await Promise.all([
         axios.post(`${API_BASE_URL}/movimentos`, dadosMovimento),
         axios.put(`${API_BASE_URL}/itens/${itemId}`, {
@@ -99,7 +91,6 @@ function MovimentacaoEstoque() {
         })
       ]);
 
-      // Atualizar estado local
       setItens(itens.map(i => 
         i.id === itemId ? { 
           ...i, 
@@ -109,81 +100,7 @@ function MovimentacaoEstoque() {
         } : i
       ));
 
-      // Preparar dados para impressão
-      const posto = postos.find(p => p.id === Number(movimento.postoId));
-      const colaborador = colaboradores.find(c => c.id === Number(movimento.colaboradorId));
-
-      // Gerar comprovante de impressão
-      const printWindow = window.open('', '_blank');
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>Comprovante de Movimentação</title>
-            <style>
-              body { font-family: Arial; margin: 20px; }
-              h1 { color: #333; text-align: center; }
-              table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-              th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
-              th { background-color: #f2f2f2; }
-              .header { margin-bottom: 30px; }
-              .footer { margin-top: 30px; font-size: 0.8em; text-align: right; }
-            </style>
-          </head>
-          <body>
-            <div class="header">
-              <h1>Comprovante de Movimentação</h1>
-              <p style="text-align: center;">Nº ${movimentoRes.data.data?.id || 'N/A'}</p>
-            </div>
-            
-            <table>
-              <tr>
-                <th>Tipo de Movimentação</th>
-                <td>${movimento.tipo}</td>
-              </tr>
-              <tr>
-                <th>Item</th>
-                <td>${item.numero} - ${item.nome}</td>
-              </tr>
-              <tr>
-                <th>Quantidade</th>
-                <td>${movimento.quantidade}</td>
-              </tr>
-              <tr>
-                <th>Posto de Atendimento</th>
-                <td>${posto?.numero || 'N/A'} - ${posto?.cidade || 'N/A'}</td>
-              </tr>
-              <tr>
-                <th>Colaborador</th>
-                <td>${colaborador?.matricula || 'N/A'} - ${colaborador?.nome || 'N/A'}</td>
-              </tr>
-              <tr>
-                <th>Data/Hora</th>
-                <td>${new Date(movimento.data).toLocaleString()}</td>
-              </tr>
-              <tr>
-                <th>Observações</th>
-                <td>${movimento.observacao || 'Nenhuma'}</td>
-              </tr>
-            </table>
-
-            <div class="footer">
-              <p>Emitido em: ${new Date().toLocaleString()}</p>
-            </div>
-
-            <script>
-              setTimeout(() => {
-                window.print();
-                window.close();
-              }, 300);
-            </script>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-
       alert('Movimentação registrada com sucesso!');
-      
-      // Resetar formulário (exceto tipo e data)
       setMovimento(prev => ({
         tipo: prev.tipo,
         itemId: '',
@@ -193,7 +110,6 @@ function MovimentacaoEstoque() {
         data: new Date().toISOString().slice(0, 16),
         observacao: ''
       }));
-
     } catch (error) {
       console.error('Erro ao processar movimentação:', error);
       alert(`Erro: ${error.response?.data?.message || error.message}`);
@@ -209,115 +125,126 @@ function MovimentacaoEstoque() {
   }
 
   return (
-    <div className="movimentacao-container">
+    <div className="form-container">
       <h2>Movimentação de Estoque</h2>
       
       <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label>Tipo:</label>
-          <select 
-            name="tipo" 
-            value={movimento.tipo} 
-            onChange={handleChange} 
-            required
-          >
-            <option value="Entrada">Entrada</option>
-            <option value="Saída">Saída</option>
-            <option value="Devolução">Devolução</option>
-          </select>
+        <div className="form-row">
+          <div className="select-container">
+            <label className="form-label">Tipo:</label>
+            <select 
+              name="tipo" 
+              className="form-control select-field"
+              value={movimento.tipo} 
+              onChange={handleChange} 
+              required
+            >
+              <option value="Entrada">Entrada</option>
+              <option value="Saída">Saída</option>
+              <option value="Devolução">Devolução</option>
+            </select>
+          </div>
+          
+          <div className="select-container">
+            <label className="form-label">Item:</label>
+            <select 
+              name="itemId" 
+              className="form-control select-field"
+              value={movimento.itemId} 
+              onChange={handleChange} 
+              required
+              disabled={itens.length === 0}
+            >
+              <option value="">{itens.length === 0 ? 'Carregando itens...' : 'Selecione um item'}</option>
+              {itens.map(item => (
+                <option key={item.id} value={item.id}>
+                  {item.numero} - {item.nome} (Estoque: {item.quantidade})
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="form-row">
+          <div className="select-container">
+            <label className="form-label">Posto de Atendimento:</label>
+            <select 
+              name="postoId" 
+              className="form-control select-field"
+              value={movimento.postoId} 
+              onChange={handleChange} 
+              required
+              disabled={postos.length === 0}
+            >
+              <option value="">{postos.length === 0 ? 'Carregando postos...' : 'Selecione um posto'}</option>
+              {postos.map(posto => (
+                <option key={posto.id} value={posto.id}>
+                  {posto.numero} - {posto.cidade}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="select-container">
+            <label className="form-label">Colaborador:</label>
+            <select 
+              name="colaboradorId" 
+              className="form-control select-field"
+              value={movimento.colaboradorId} 
+              onChange={handleChange} 
+              required
+              disabled={colaboradores.length === 0}
+            >
+              <option value="">{colaboradores.length === 0 ? 'Carregando colaboradores...' : 'Selecione um colaborador'}</option>
+              {colaboradores.map(colab => (
+                <option key={colab.id} value={colab.id}>
+                  {colab.matricula} - {colab.nome}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="form-row">
+          <div className="form-group">
+            <label className="form-label">Quantidade:</label>
+            <input
+              type="number"
+              name="quantidade"
+              className="form-control"
+              value={movimento.quantidade}
+              onChange={handleChange}
+              min="1"
+              required
+            />
+          </div>
+          
+          <div className="form-group">
+            <label className="form-label">Data:</label>
+            <input
+              type="datetime-local"
+              name="data"
+              className="form-control"
+              value={movimento.data}
+              onChange={handleChange}
+              required
+            />
+          </div>
         </div>
         
         <div className="form-group">
-          <label>Item:</label>
-          <select 
-            name="itemId" 
-            value={movimento.itemId} 
-            onChange={handleChange} 
-            required
-            disabled={itens.length === 0}
-          >
-            <option value="">{itens.length === 0 ? 'Carregando itens...' : 'Selecione um item'}</option>
-            {itens.map(item => (
-              <option key={item.id} value={item.id}>
-                {item.numero} - {item.nome} (Estoque: {item.quantidade})
-              </option>
-            ))}
-          </select>
-        </div>
-        
-        <div className="form-group">
-          <label>Posto de Atendimento:</label>
-          <select 
-            name="postoId" 
-            value={movimento.postoId} 
-            onChange={handleChange} 
-            required
-            disabled={postos.length === 0}
-          >
-            <option value="">{postos.length === 0 ? 'Carregando postos...' : 'Selecione um posto'}</option>
-            {postos.map(posto => (
-              <option key={posto.id} value={posto.id}>
-                {posto.numero} - {posto.cidade}
-              </option>
-            ))}
-          </select>
-        </div>
-        
-        <div className="form-group">
-          <label>Colaborador:</label>
-          <select 
-            name="colaboradorId" 
-            value={movimento.colaboradorId} 
-            onChange={handleChange} 
-            required
-            disabled={colaboradores.length === 0}
-          >
-            <option value="">{colaboradores.length === 0 ? 'Carregando colaboradores...' : 'Selecione um colaborador'}</option>
-            {colaboradores.map(colab => (
-              <option key={colab.id} value={colab.id}>
-                {colab.matricula} - {colab.nome}
-              </option>
-            ))}
-          </select>
-        </div>
-        
-        <div className="form-group">
-          <label>Quantidade:</label>
-          <input
-            type="number"
-            name="quantidade"
-            value={movimento.quantidade}
-            onChange={handleChange}
-            min="1"
-            required
-          />
-        </div>
-        
-        <div className="form-group">
-          <label>Data:</label>
-          <input
-            type="datetime-local"
-            name="data"
-            value={movimento.data}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        
-        <div className="form-group">
-          <label>Observação:</label>
+          <label className="form-label">Observação:</label>
           <textarea
             name="observacao"
+            className="form-control"
             value={movimento.observacao}
             onChange={handleChange}
+            rows="3"
             placeholder="Motivo da movimentação"
           />
         </div>
         
-        <div className="form-buttons">
-          <button type="submit" className="btn-primary">
-            Registrar Movimentação
-          </button>
+        <div className="form-actions">
           <button 
             type="button" 
             className="btn-secondary"
@@ -332,6 +259,9 @@ function MovimentacaoEstoque() {
             })}
           >
             Limpar Campos
+          </button>
+          <button type="submit" className="btn-primary">
+            Registrar Movimentação
           </button>
         </div>
       </form>

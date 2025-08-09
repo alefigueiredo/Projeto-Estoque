@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import styles from './CadastroColaborador.module.css';
 
 function CadastroColaborador() {
   const [colaborador, setColaborador] = useState({
@@ -20,7 +19,6 @@ function CadastroColaborador() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Removida a variável response não utilizada
       await axios.post('http://localhost:5001/api/colaboradores', colaborador);
       setMensagem('Colaborador cadastrado com sucesso!');
       setColaborador({ matricula: '', nome: '', cargo: '' });
@@ -31,16 +29,22 @@ function CadastroColaborador() {
   };
 
   return (
-    <div className="cadastro-container">
+    <div className="form-container">
       <h2>Cadastro de Colaborador</h2>
-      {mensagem && <div className={`mensagem ${mensagem.includes('sucesso') ? 'sucesso' : 'erro'}`}>{mensagem}</div>}
+      
+      {mensagem && (
+        <div className={`mensagem ${mensagem.includes('sucesso') ? 'sucesso' : 'erro'}`}>
+          {mensagem}
+        </div>
+      )}
       
       <form onSubmit={handleSubmit}>
         <div className="form-group">
-          <label>Matrícula:</label>
+          <label className="form-label">Matrícula:</label>
           <input
             type="text"
             name="matricula"
+            className="form-control"
             value={colaborador.matricula}
             onChange={handleChange}
             required
@@ -48,10 +52,11 @@ function CadastroColaborador() {
         </div>
         
         <div className="form-group">
-          <label>Nome:</label>
+          <label className="form-label">Nome:</label>
           <input
             type="text"
             name="nome"
+            className="form-control"
             value={colaborador.nome}
             onChange={handleChange}
             required
@@ -59,20 +64,29 @@ function CadastroColaborador() {
         </div>
         
         <div className="form-group">
-          <label>Cargo:</label>
+          <label className="form-label">Cargo:</label>
           <input
             type="text"
             name="cargo"
+            className="form-control"
             value={colaborador.cargo}
             onChange={handleChange}
             required
           />
         </div>
         
-        <button type="submit" className="btn-primary">Salvar</button>
-        <button type="button" className="btn-secondary" onClick={() => setColaborador({ matricula: '', nome: '', cargo: '' })}>
-          Limpar
-        </button>
+        <div className="form-actions">
+          <button 
+            type="button" 
+            className="btn-secondary"
+            onClick={() => setColaborador({ matricula: '', nome: '', cargo: '' })}
+          >
+            Limpar
+          </button>
+          <button type="submit" className="btn-primary">
+            Salvar
+          </button>
+        </div>
       </form>
     </div>
   );
