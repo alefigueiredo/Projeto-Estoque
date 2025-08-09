@@ -2,61 +2,41 @@ const Colaborador = require('../models/Colaborador');
 
 module.exports = {
   async criarColaborador(req, res) {
-    try {
-      const colaborador = await Colaborador.create(req.body);
-      res.status(201).json(colaborador);
-    } catch (error) {
-      res.status(400).json({ error: error.message });
-    }
+    const colaborador = await Colaborador.create(req.body);
+    res.status(201).json({ success: true, message: 'Colaborador criado com sucesso', data: colaborador });
   },
 
   async listarColaboradores(req, res) {
-    try {
-      const colaboradores = await Colaborador.findAll();
-      res.json(colaboradores);
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
+    const colaboradores = await Colaborador.findAll();
+    res.json({ success: true, data: colaboradores });
   },
 
   async obterColaborador(req, res) {
-    try {
-      const colaborador = await Colaborador.findByPk(req.params.id);
-      if (!colaborador) {
-        return res.status(404).json({ error: 'Colaborador não encontrado' });
-      }
-      res.json(colaborador);
-    } catch (error) {
-      res.status(500).json({ error: error.message });
+    const colaborador = await Colaborador.findByPk(req.params.id);
+    if (!colaborador) {
+      res.status(404);
+      throw new Error('Colaborador não encontrado');
     }
+    res.json({ success: true, data: colaborador });
   },
 
   async atualizarColaborador(req, res) {
-    try {
-      const [updated] = await Colaborador.update(req.body, {
-        where: { id: req.params.id }
-      });
-      if (updated) {
-        const updatedColaborador = await Colaborador.findByPk(req.params.id);
-        return res.json(updatedColaborador);
-      }
+    const colaborador = await Colaborador.findByPk(req.params.id);
+    if (!colaborador) {
+      res.status(404);
       throw new Error('Colaborador não encontrado');
-    } catch (error) {
-      res.status(500).json({ error: error.message });
     }
+    await colaborador.update(req.body);
+    res.json({ success: true, message: 'Colaborador atualizado com sucesso', data: colaborador });
   },
 
   async deletarColaborador(req, res) {
-    try {
-      const deleted = await Colaborador.destroy({
-        where: { id: req.params.id }
-      });
-      if (deleted) {
-        return res.json({ message: 'Colaborador deletado com sucesso' });
-      }
+    const colaborador = await Colaborador.findByPk(req.params.id);
+    if (!colaborador) {
+      res.status(404);
       throw new Error('Colaborador não encontrado');
-    } catch (error) {
-      res.status(500).json({ error: error.message });
     }
+    await colaborador.destroy();
+    res.json({ success: true, message: 'Colaborador deletado com sucesso' });
   }
 };

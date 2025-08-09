@@ -5,16 +5,20 @@ function PesquisaEstoque() {
   const [itens, setItens] = useState([]);
   const [filtro, setFiltro] = useState('');
   const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState('');
   const [ordenacao, setOrdenacao] = useState({ campo: 'nome', direcao: 'asc' });
 
   useEffect(() => {
     const carregarItens = async () => {
       try {
         const response = await axios.get('http://localhost:5001/api/itens');
-        setItens(response.data);
-        setCarregando(false);
+        // Ajuste para a estrutura da sua API que retorna { success, data }
+        setItens(response.data.success ? response.data.data : []);
       } catch (error) {
         console.error("Erro ao carregar itens:", error);
+        setErro('Erro ao carregar itens do estoque. Tente recarregar a página.');
+        setItens([]);
+      } finally {
         setCarregando(false);
       }
     };
@@ -23,90 +27,106 @@ function PesquisaEstoque() {
   }, []);
 
   const handleOrdenar = (campo) => {
-    if (ordenacao.campo === campo) {
-      setOrdenacao({
-        campo,
-        direcao: ordenacao.direcao === 'asc' ? 'desc' : 'asc'
-      });
-    } else {
-      setOrdenacao({
-        campo,
-        direcao: 'asc'
-      });
-    }
+    setOrdenacao(prev => ({
+      campo,
+      direcao: prev.campo === campo ? (prev.direcao === 'asc' ? 'desc' : 'asc') : 'asc'
+    }));
   };
 
-  const itensFiltrados = itens.filter(item => 
-    item.nome.toLowerCase().includes(filtro.toLowerCase()) ||
-    item.numero.toLowerCase().includes(filtro.toLowerCase())
-  );
+  const itensFiltrados = itens.filter(item => {
+    if (!filtro) return true;
+    
+    const searchTerm = filtro.toLowerCase();
+    return (
+      (item.nome?.toLowerCase().includes(searchTerm)) ||
+      (item.numero?.toString().toLowerCase().includes(searchTerm)) ||
+      (item.quantidade?.toString().includes(searchTerm))
+    );
+  });
 
-  // Ordenar os itens
   const itensOrdenados = [...itensFiltrados].sort((a, b) => {
-    if (a[ordenacao.campo] < b[ordenacao.campo]) {
-      return ordenacao.direcao === 'asc' ? -1 : 1;
+    const valA = a[ordenacao.campo]?.toString().toLowerCase() || '';
+    const valB = b[ordenacao.campo]?.toString().toLowerCase() || '';
+    
+    if (ordenacao.campo === 'quantidade') {
+      // Ordenação numérica para quantidade
+      return ordenacao.direcao === 'asc' 
+        ? Number(a.quantidade) - Number(b.quantidade)
+        : Number(b.quantidade) - Number(a.quantidade);
     }
-    if (a[ordenacao.campo] > b[ordenacao.campo]) {
-      return ordenacao.direcao === 'asc' ? 1 : -1;
-    }
-    return 0;
+    
+    // Ordenação alfabética para outros campos
+    return ordenacao.direcao === 'asc' 
+      ? valA.localeCompare(valB)
+      : valB.localeCompare(valA);
   });
 
   return (
     <div className="pesquisa-container">
       <h2>Pesquisa de Estoque</h2>
       
-      <div className="filtro">
+      {erro && <div className="alert alert-error">{erro}</div>}
+      
+      <div className="search-box">
         <input
           type="text"
-          placeholder="Pesquisar por nome ou código..."
+          placeholder="Pesquisar por nome, código ou quantidade..."
           value={filtro}
           onChange={(e) => setFiltro(e.target.value)}
+          className="search-input"
         />
+        <span className="search-icon">🔍</span>
       </div>
       
       {carregando ? (
-        <p>Carregando itens...</p>
+        <div className="loading">Carregando itens...</div>
       ) : (
-        <table className="tabela-estoque">
-          <thead>
-            <tr>
-              <th onClick={() => handleOrdenar('numero')}>
-                Código {ordenacao.campo === 'numero' && (ordenacao.direcao === 'asc' ? '↑' : '↓')}
-              </th>
-              <th onClick={() => handleOrdenar('nome')}>
-                <div className="flex items-center">
-                  Nome 
-                  {ordenacao.campo === 'nome' && (
-                    <span className="ml-1">
-                      {ordenacao.direcao === 'asc' ? '↑' : '↓'}
-                    </span>
+        <div className="table-responsive">
+          <table className="estoque-table">
+            <thead>
+              <tr>
+                <th onClick={() => handleOrdenar('numero')} className="sortable-header">
+                  Código {ordenacao.campo === 'numero' && (
+                    <span>{ordenacao.direcao === 'asc' ? '↑' : '↓'}</span>
                   )}
-                </div>
-              </th>
-              <th onClick={() => handleOrdenar('quantidade')}>
-                Quantidade {ordenacao.campo === 'quantidade' && (ordenacao.direcao === 'asc' ? '↑' : '↓')}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {itensOrdenados.map(item => (
-              <tr key={item.id} className={item.quantidade < 10 ? 'estoque-baixo' : ''}>
-                <td>{item.numero}</td>
-                <td>{item.nome}</td>
-                <td>{item.quantidade}</td>
+                </th>
+                <th onClick={() => handleOrdenar('nome')} className="sortable-header">
+                  Nome {ordenacao.campo === 'nome' && (
+                    <span>{ordenacao.direcao === 'asc' ? '↑' : '↓'}</span>
+                  )}
+                </th>
+                <th onClick={() => handleOrdenar('quantidade')} className="sortable-header">
+                  Quantidade {ordenacao.campo === 'quantidade' && (
+                    <span>{ordenacao.direcao === 'asc' ? '↑' : '↓'}</span>
+                  )}
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {itensOrdenados.length > 0 ? (
+                itensOrdenados.map(item => (
+                  <tr key={item.id} className={item.quantidade < 10 ? 'low-stock' : ''}>
+                    <td>{item.numero || '-'}</td>
+                    <td>{item.nome || '-'}</td>
+                    <td>{item.quantidade}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="3" className="no-results">
+                    {filtro ? 'Nenhum item encontrado com o filtro informado' : 'Nenhum item cadastrado'}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       )}
       
-      {itensFiltrados.length === 0 && !carregando && (
-        <p>Nenhum item encontrado com o filtro informado.</p>
-      )}
-      
-      <div className="total-itens">
-        Total de itens encontrados: {itensFiltrados.length}
+      <div className="search-summary">
+        {!carregando && (
+          <p>Total de itens encontrados: <strong>{itensFiltrados.length}</strong></p>
+        )}
       </div>
     </div>
   );

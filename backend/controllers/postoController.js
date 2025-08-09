@@ -2,61 +2,41 @@ const PostoAtendimento = require('../models/PostoAtendimento');
 
 module.exports = {
   async criarPosto(req, res) {
-    try {
-      const posto = await PostoAtendimento.create(req.body);
-      res.status(201).json(posto);
-    } catch (error) {
-      res.status(400).json({ error: error.message });
-    }
+    const posto = await PostoAtendimento.create(req.body);
+    res.status(201).json({ success: true, message: 'Posto criado com sucesso', data: posto });
   },
 
   async listarPostos(req, res) {
-    try {
-      const postos = await PostoAtendimento.findAll();
-      res.json(postos);
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
+    const postos = await PostoAtendimento.findAll();
+    res.json({ success: true, data: postos });
   },
 
   async obterPosto(req, res) {
-    try {
-      const posto = await PostoAtendimento.findByPk(req.params.id);
-      if (!posto) {
-        return res.status(404).json({ error: 'Posto não encontrado' });
-      }
-      res.json(posto);
-    } catch (error) {
-      res.status(500).json({ error: error.message });
+    const posto = await PostoAtendimento.findByPk(req.params.id);
+    if (!posto) {
+      res.status(404);
+      throw new Error('Posto não encontrado');
     }
+    res.json({ success: true, data: posto });
   },
 
   async atualizarPosto(req, res) {
-    try {
-      const [updated] = await PostoAtendimento.update(req.body, {
-        where: { id: req.params.id }
-      });
-      if (updated) {
-        const updatedPosto = await PostoAtendimento.findByPk(req.params.id);
-        return res.json(updatedPosto);
-      }
+    const posto = await PostoAtendimento.findByPk(req.params.id);
+    if (!posto) {
+      res.status(404);
       throw new Error('Posto não encontrado');
-    } catch (error) {
-      res.status(500).json({ error: error.message });
     }
+    await posto.update(req.body);
+    res.json({ success: true, message: 'Posto atualizado com sucesso', data: posto });
   },
 
   async deletarPosto(req, res) {
-    try {
-      const deleted = await PostoAtendimento.destroy({
-        where: { id: req.params.id }
-      });
-      if (deleted) {
-        return res.json({ message: 'Posto deletado com sucesso' });
-      }
+    const posto = await PostoAtendimento.findByPk(req.params.id);
+    if (!posto) {
+      res.status(404);
       throw new Error('Posto não encontrado');
-    } catch (error) {
-      res.status(500).json({ error: error.message });
     }
+    await posto.destroy();
+    res.json({ success: true, message: 'Posto deletado com sucesso' });
   }
 };

@@ -16,7 +16,22 @@ const Movimento = sequelize.define('Movimento', {
   },
   observacao: {
     type: DataTypes.TEXT
+  },
+  itemId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  postoId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  colaboradorId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
   }
+}, {
+  tableName: 'Movimentos',
+  timestamps: true
 });
 
 module.exports = Movimento;

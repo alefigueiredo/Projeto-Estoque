@@ -10,7 +10,7 @@ function MovimentacaoEstoque() {
     postoId: '',
     colaboradorId: '',
     quantidade: 0,
-    data: new Date().toISOString().slice(0, 16), // Formato ISO com hora
+    data: new Date().toISOString().slice(0, 16),
     observacao: ''
   });
 
@@ -18,14 +18,8 @@ function MovimentacaoEstoque() {
   const [postos, setPostos] = useState([]);
   const [colaboradores, setColaboradores] = useState([]);
   const [carregando, setCarregando] = useState(true);
-  const [erro, setErro] = useState('');
+  const [erro, setErro] = useState(null);
 
-  useEffect(() => {
-    console.log("Itens carregados:", itens);
-    console.log("Postos carregados:", postos);
-    console.log("Colaboradores carregados:", colaboradores);
-  }, [itens, postos, colaboradores]);
-  
   useEffect(() => {
     const carregarDados = async () => {
       try {
@@ -34,14 +28,19 @@ function MovimentacaoEstoque() {
           axios.get(`${API_BASE_URL}/postos`),
           axios.get(`${API_BASE_URL}/colaboradores`)
         ]);
-        
-        setItens(itensRes.data);
-        setPostos(postosRes.data);
-        setColaboradores(colaboradoresRes.data);
-        setCarregando(false);
+
+        // Ajuste para a estrutura da sua API (resposta com success e data)
+        setItens(itensRes.data.success ? itensRes.data.data : []);
+        setPostos(postosRes.data.success ? postosRes.data.data : []);
+        setColaboradores(colaboradoresRes.data.success ? colaboradoresRes.data.data : []);
+
       } catch (error) {
         console.error('Erro ao carregar dados:', error);
-        setErro('Falha ao carregar dados. Tente recarregar a página.');
+        setErro('Erro ao carregar dados do servidor');
+        setItens([]);
+        setPostos([]);
+        setColaboradores([]);
+      } finally {
         setCarregando(false);
       }
     };
@@ -50,75 +49,168 @@ function MovimentacaoEstoque() {
   }, []);
 
   const handleChange = (e) => {
-    setMovimento({
-      ...movimento,
-      [e.target.name]: e.target.value
-    });
+    const { name, value } = e.target;
+    setMovimento(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  try {
-    const itemId = Number(movimento.itemId);
-    const item = itens.find(i => Number(i.id) === itemId);
+    e.preventDefault();
     
-    if (!item) throw new Error('Item não encontrado');
+    try {
+      // Validação dos campos
+      if (!movimento.itemId || !movimento.postoId || !movimento.colaboradorId || movimento.quantidade <= 0) {
+        throw new Error('Preencha todos os campos obrigatórios com valores válidos');
+      }
 
-    // Converter para número
-    const quantidadeMov = Number(movimento.quantidade);
-    
-    if (movimento.tipo !== 'Entrada') {
-      if (quantidadeMov > item.quantidade) {
+      const itemId = Number(movimento.itemId);
+      const item = itens.find(i => Number(i.id) === itemId);
+      
+      if (!item) {
+        throw new Error('Item selecionado não encontrado');
+      }
+
+      const quantidadeMov = Number(movimento.quantidade);
+      
+      if (movimento.tipo !== 'Entrada' && quantidadeMov > item.quantidade) {
         throw new Error(`Quantidade indisponível em estoque (Disponível: ${item.quantidade})`);
       }
+
+      // Preparar dados para a API
+      const dadosMovimento = {
+        tipo: movimento.tipo,
+        itemId: itemId,
+        postoId: Number(movimento.postoId),
+        colaboradorId: Number(movimento.colaboradorId),
+        quantidade: quantidadeMov,
+        data: movimento.data,
+        observacao: movimento.observacao || null
+      };
+
+      // Enviar para a API
+      const [movimentoRes, itemRes] = await Promise.all([
+        axios.post(`${API_BASE_URL}/movimentos`, dadosMovimento),
+        axios.put(`${API_BASE_URL}/itens/${itemId}`, {
+          quantidade: movimento.tipo === 'Entrada' 
+            ? item.quantidade + quantidadeMov 
+            : item.quantidade - quantidadeMov
+        })
+      ]);
+
+      // Atualizar estado local
+      setItens(itens.map(i => 
+        i.id === itemId ? { 
+          ...i, 
+          quantidade: movimento.tipo === 'Entrada' 
+            ? i.quantidade + quantidadeMov 
+            : i.quantidade - quantidadeMov 
+        } : i
+      ));
+
+      // Preparar dados para impressão
+      const posto = postos.find(p => p.id === Number(movimento.postoId));
+      const colaborador = colaboradores.find(c => c.id === Number(movimento.colaboradorId));
+
+      // Gerar comprovante de impressão
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Comprovante de Movimentação</title>
+            <style>
+              body { font-family: Arial; margin: 20px; }
+              h1 { color: #333; text-align: center; }
+              table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+              th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
+              th { background-color: #f2f2f2; }
+              .header { margin-bottom: 30px; }
+              .footer { margin-top: 30px; font-size: 0.8em; text-align: right; }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h1>Comprovante de Movimentação</h1>
+              <p style="text-align: center;">Nº ${movimentoRes.data.data?.id || 'N/A'}</p>
+            </div>
+            
+            <table>
+              <tr>
+                <th>Tipo de Movimentação</th>
+                <td>${movimento.tipo}</td>
+              </tr>
+              <tr>
+                <th>Item</th>
+                <td>${item.numero} - ${item.nome}</td>
+              </tr>
+              <tr>
+                <th>Quantidade</th>
+                <td>${movimento.quantidade}</td>
+              </tr>
+              <tr>
+                <th>Posto de Atendimento</th>
+                <td>${posto?.numero || 'N/A'} - ${posto?.cidade || 'N/A'}</td>
+              </tr>
+              <tr>
+                <th>Colaborador</th>
+                <td>${colaborador?.matricula || 'N/A'} - ${colaborador?.nome || 'N/A'}</td>
+              </tr>
+              <tr>
+                <th>Data/Hora</th>
+                <td>${new Date(movimento.data).toLocaleString()}</td>
+              </tr>
+              <tr>
+                <th>Observações</th>
+                <td>${movimento.observacao || 'Nenhuma'}</td>
+              </tr>
+            </table>
+
+            <div class="footer">
+              <p>Emitido em: ${new Date().toLocaleString()}</p>
+            </div>
+
+            <script>
+              setTimeout(() => {
+                window.print();
+                window.close();
+              }, 300);
+            </script>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+
+      alert('Movimentação registrada com sucesso!');
+      
+      // Resetar formulário (exceto tipo e data)
+      setMovimento(prev => ({
+        tipo: prev.tipo,
+        itemId: '',
+        postoId: '',
+        colaboradorId: '',
+        quantidade: 0,
+        data: new Date().toISOString().slice(0, 16),
+        observacao: ''
+      }));
+
+    } catch (error) {
+      console.error('Erro ao processar movimentação:', error);
+      alert(`Erro: ${error.response?.data?.message || error.message}`);
     }
-
-    // Atualiza localmente primeiro para resposta imediata
-    const novaQuantidade = movimento.tipo === 'Entrada' 
-      ? item.quantidade + quantidadeMov
-      : item.quantidade - quantidadeMov;
-
-    // Atualiza estado local
-    setItens(itens.map(i => 
-      Number(i.id) === itemId ? {...i, quantidade: novaQuantidade} : i
-    ));
-
-    // Envia para o servidor
-    await axios.post(`${API_BASE_URL}/movimentos`, {
-      ...movimento,
-      itemId: itemId,
-      quantidade: quantidadeMov
-    });
-
-    await axios.put(`${API_BASE_URL}/itens/${itemId}`, {
-      quantidade: novaQuantidade
-    });
-
-    alert('Movimentação registrada com sucesso!');
-    setMovimento({
-      ...movimento,
-      quantidade: 0,
-      observacao: ''
-    });
-  } catch (error) {
-    alert(`Erro: ${error.message}`);
-    console.error('Detalhes:', error);
-  }
-};
+  };
 
   if (carregando) {
-    return <div>Carregando dados...</div>;
+    return <div className="loading">Carregando dados...</div>;
   }
 
   if (erro) {
-    return <div className="erro">{erro}</div>;
+    return <div className="error-message">{erro}</div>;
   }
 
   return (
     <div className="movimentacao-container">
       <h2>Movimentação de Estoque</h2>
-      
-      {erro && <div className="mensagem erro">{erro}</div>}
       
       <form onSubmit={handleSubmit}>
         <div className="form-group">
@@ -142,11 +234,12 @@ function MovimentacaoEstoque() {
             value={movimento.itemId} 
             onChange={handleChange} 
             required
+            disabled={itens.length === 0}
           >
-            <option value="">Selecione um item</option>
+            <option value="">{itens.length === 0 ? 'Carregando itens...' : 'Selecione um item'}</option>
             {itens.map(item => (
               <option key={item.id} value={item.id}>
-                {item.numero} - {item.nome}
+                {item.numero} - {item.nome} (Estoque: {item.quantidade})
               </option>
             ))}
           </select>
@@ -159,8 +252,9 @@ function MovimentacaoEstoque() {
             value={movimento.postoId} 
             onChange={handleChange} 
             required
+            disabled={postos.length === 0}
           >
-            <option value="">Selecione um P.A.</option>
+            <option value="">{postos.length === 0 ? 'Carregando postos...' : 'Selecione um posto'}</option>
             {postos.map(posto => (
               <option key={posto.id} value={posto.id}>
                 {posto.numero} - {posto.cidade}
@@ -176,8 +270,9 @@ function MovimentacaoEstoque() {
             value={movimento.colaboradorId} 
             onChange={handleChange} 
             required
+            disabled={colaboradores.length === 0}
           >
-            <option value="">Selecione um colaborador</option>
+            <option value="">{colaboradores.length === 0 ? 'Carregando colaboradores...' : 'Selecione um colaborador'}</option>
             {colaboradores.map(colab => (
               <option key={colab.id} value={colab.id}>
                 {colab.matricula} - {colab.nome}
@@ -220,28 +315,23 @@ function MovimentacaoEstoque() {
         </div>
         
         <div className="form-buttons">
-          <button type="submit" className="btn-primary">OK</button>
+          <button type="submit" className="btn-primary">
+            Registrar Movimentação
+          </button>
           <button 
             type="button" 
             className="btn-secondary"
             onClick={() => setMovimento({
-              tipo: 'Entrada',
+              tipo: movimento.tipo,
               itemId: '',
               postoId: '',
               colaboradorId: '',
               quantidade: 0,
-              data: new Date().toISOString().split('T')[0],
+              data: new Date().toISOString().slice(0, 16),
               observacao: ''
             })}
           >
-            Limpar
-          </button>
-          <button 
-            type="button" 
-            className="btn-danger"
-            onClick={() => window.history.back()}
-          >
-            Cancelar
+            Limpar Campos
           </button>
         </div>
       </form>

@@ -1,72 +1,155 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 
 // Definição local da URL base (caso não queira usar o arquivo config)
 const API_BASE_URL = 'http://localhost:5001/api';
 
 function ImpressaoMovimento() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [movimento, setMovimento] = useState(null);
   const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState(null);
   const [item, setItem] = useState(null);
   const [posto, setPosto] = useState(null);
   const [colaborador, setColaborador] = useState(null);
-// Corrigir o formato da data para o fuso horário do Brasil
-const formatarDataBrasil = (dataString) => {
-  const data = new Date(dataString);
-  // Ajusta para o fuso horário de Brasília (-3h)
-  data.setHours(data.getHours() - 3);
-  return data.toLocaleString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'America/Sao_Paulo'
-  });
-};
-
-// No JSX:
-<p><strong>Data:</strong> {formatarDataBrasil(movimento.data)}</p>
+// Componente para impressão de comprovante de movimentação
 
   useEffect(() => {
     const carregarMovimento = async () => {
       try {
+        console.log('Carregando movimento com ID:', id);
+        
+        // Verificar se temos um ID válido
+        if (!id || isNaN(parseInt(id))) {
+          setErro('ID de movimento inválido');
+          setCarregando(false);
+          return;
+        }
+        
+        // Buscar movimento diretamente do banco de dados
         const movimentoRes = await axios.get(`${API_BASE_URL}/movimentos/${id}`);
-        setMovimento(movimentoRes.data);
+        console.log('Resposta completa da API:', movimentoRes);
         
-        // Carregar dados relacionados
-        const [itemRes, postoRes, colaboradorRes] = await Promise.all([
-          axios.get(`${API_BASE_URL}/itens/${movimentoRes.data.itemId}`),
-          axios.get(`${API_BASE_URL}/postos/${movimentoRes.data.postoId}`),
-          axios.get(`${API_BASE_URL}/colaboradores/${movimentoRes.data.colaboradorId}`)
-        ]);
+        // Verificar se a resposta é válida
+        if (!movimentoRes.data) {
+          setErro('Resposta da API inválida');
+          setCarregando(false);
+          return;
+        }
         
-        setItem(itemRes.data);
-        setPosto(postoRes.data);
-        setColaborador(colaboradorRes.data);
+        // Se a API retornou um erro
+        if (movimentoRes.status === 404 || (movimentoRes.data && !movimentoRes.data.success)) {
+          setErro(`Movimento #${id} não encontrado`);
+          setCarregando(false);
+          return;
+        }
+        
+        // Extrair dados do movimento
+        const movimentoData = movimentoRes.data.data;
+        console.log('Dados do movimento:', movimentoData);
+        
+        if (!movimentoData) {
+          setErro('Dados do movimento não encontrados');
+          setCarregando(false);
+          return;
+        }
+        
+        setMovimento(movimentoData);
+        
+        // Verificar se temos os objetos relacionados incluídos ou IDs para buscá-los
+        if (movimentoData.Item) {
+          console.log('Item incluído na resposta:', movimentoData.Item);
+          setItem(movimentoData.Item);
+        } else if (movimentoData.itemId) {
+          try {
+            const itemRes = await axios.get(`${API_BASE_URL}/itens/${movimentoData.itemId}`);
+            const itemData = itemRes.data.data || itemRes.data;
+            console.log('Dados do item:', itemData);
+            setItem(itemData);
+          } catch (itemError) {
+            console.error('Erro ao carregar item:', itemError);
+          }
+        }
+        
+        if (movimentoData.PostoAtendimento) {
+          console.log('Posto incluído na resposta:', movimentoData.PostoAtendimento);
+          setPosto(movimentoData.PostoAtendimento);
+        } else if (movimentoData.postoId) {
+          try {
+            const postoRes = await axios.get(`${API_BASE_URL}/postos/${movimentoData.postoId}`);
+            const postoData = postoRes.data.data || postoRes.data;
+            console.log('Dados do posto:', postoData);
+            setPosto(postoData);
+          } catch (postoError) {
+            console.error('Erro ao carregar posto:', postoError);
+          }
+        }
+        
+        if (movimentoData.Colaborador) {
+          console.log('Colaborador incluído na resposta:', movimentoData.Colaborador);
+          setColaborador(movimentoData.Colaborador);
+        } else if (movimentoData.colaboradorId) {
+          try {
+            const colaboradorRes = await axios.get(`${API_BASE_URL}/colaboradores/${movimentoData.colaboradorId}`);
+            const colaboradorData = colaboradorRes.data.data || colaboradorRes.data;
+            console.log('Dados do colaborador:', colaboradorData);
+            setColaborador(colaboradorData);
+          } catch (colaboradorError) {
+            console.error('Erro ao carregar colaborador:', colaboradorError);
+          }
+        }
         
         setCarregando(false);
       } catch (error) {
         console.error("Erro ao carregar movimento:", error);
+        setErro(error.response?.data?.message || 'Erro ao carregar movimento');
         setCarregando(false);
       }
     };
 
-    carregarMovimento();
+    if (id) {
+      carregarMovimento();
+    } else {
+      setErro('ID de movimento não fornecido');
+      setCarregando(false);
+    }
   }, [id]);
 
   const handleImprimir = () => {
-    window.print();
+    // Garantir que a impressão seja chamada após o DOM estar completamente renderizado
+    setTimeout(() => {
+      window.print();
+    }, 300);
+  };
+  
+  const handleVoltar = () => {
+    navigate('/');
   };
 
   if (carregando) {
-    return <div>Carregando movimento...</div>;
+    return <div className="loading-container">Carregando movimento...</div>;
+  }
+  
+  if (erro) {
+    return (
+      <div className="erro-container">
+        <h2>Erro ao carregar movimento</h2>
+        <p>{erro}</p>
+        <button onClick={handleVoltar} className="btn-voltar">Voltar ao Dashboard</button>
+      </div>
+    );
   }
 
   if (!movimento) {
-    return <div>Movimento não encontrado.</div>;
+    return (
+      <div className="erro-container">
+        <h2>Movimento não encontrado</h2>
+        <p>Não foi possível encontrar o movimento solicitado.</p>
+        <button onClick={handleVoltar} className="btn-voltar">Voltar ao Dashboard</button>
+      </div>
+    );
   }
 
   return (
@@ -83,7 +166,14 @@ const formatarDataBrasil = (dataString) => {
           <p><strong>ID:</strong> {movimento.id}</p>
           <p><strong>Tipo:</strong> {movimento.tipo}</p>
           <p><strong>Quantidade:</strong> {movimento.quantidade}</p>
-          <p><strong>Data:</strong> {new Date(movimento.data).toLocaleString()}</p>
+          <p><strong>Data:</strong> {new Date(movimento.data).toLocaleString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZone: 'America/Sao_Paulo'
+          })}</p>
           <p><strong>Observação:</strong> {movimento.observacao || 'Nenhuma'}</p>
         </div>
         
