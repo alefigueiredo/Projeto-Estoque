@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import styles from './CadastroItem.module.css';
 
 function CadastroItem() {
   const [item, setItem] = useState({

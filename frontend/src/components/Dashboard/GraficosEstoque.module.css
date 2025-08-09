@@ -1,0 +1,51 @@
+/* src/components/GraficosEstoque/GraficosEstoque.module.css */
+
+.container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.grafico {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 51, 160, 0.1);
+  border: 1px solid #e0e0e0;
+}
+
+.graficoTitle {
+  color: #0033a0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+/* Estilos responsivos */
+@media (max-width: 768px) {
+  .container {
+    grid-template-columns: 1fr;
+  }
+  
+  .grafico {
+    padding: 1rem;
+  }
+}
+
+/* Estilos específicos para gráficos */
+.chartContainer {
+  position: relative;
+  height: 300px;
+  width: 100%;
+}
+
+/* Cores dos gráficos alinhadas com a paleta Sicoob */
+:global .chartjs-render-monitor {
+  --chart-color-1: #0033a0; /* Azul Sicoob */
+  --chart-color-2: #00a859; /* Verde Sicoob */
+  --chart-color-3: #f68b1f; /* Laranja Sicoob */
+  --chart-color-4: #0077c8; /* Azul claro Sicoob */
+  --chart-color-5: #e31937; /* Vermelho Sicoob */
+}

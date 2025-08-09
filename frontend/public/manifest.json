@@ -1,0 +1,29 @@
+{
+  "short_name": "Estoque Sicoob",
+  "name": "Sistema de Controle de Estoque - Marketing Sicoob",
+  "description": "Sistema desenvolvido para controle de brindes e consumíveis",
+  "icons": [
+    {
+      "src": "/logo-sicoob.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo-sicoob.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#0033a0",
+  "background_color": "#ffffff",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "pt-BR",
+  "categories": ["business", "productivity", "utilities"],
+  "related_applications": [],
+  "prefer_related_applications": false
+}

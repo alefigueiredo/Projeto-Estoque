@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import styles from './CadastroColaborador.module.css';
 
 function CadastroColaborador() {
   const [colaborador, setColaborador] = useState({

@@ -1,0 +1,25 @@
+
+.movimentacao-container {
+  max-width: 800px;
+  margin: 0 auto;
+  background: white;
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.observacao-field {
+  grid-column: 1 / -1;
+}
+
+.observacao-field textarea {
+  min-height: 100px;
+  resize: vertical;
+}

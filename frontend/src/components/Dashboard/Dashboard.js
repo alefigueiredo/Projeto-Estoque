@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
+import styles from './Dashboard.module.css';
 import GraficosEstoque from './GraficosEstoque';
 
 function Dashboard() {
@@ -12,18 +13,10 @@ function Dashboard() {
   const [ordenacao, setOrdenacao] = useState({ campo: 'data', direcao: 'desc' });
 
   const handleOrdenar = (campo) => {
-    setOrdenacao(prev => {
-      if (prev.campo === campo) {
-        return {
-          campo,
-          direcao: prev.direcao === 'asc' ? 'desc' : 'asc'
-        };
-      }
-      return {
-        campo,
-        direcao: 'asc'
-      };
-    });
+    setOrdenacao(prev => ({
+      campo,
+      direcao: prev.campo === campo ? (prev.direcao === 'asc' ? 'desc' : 'asc') : 'asc'
+    }));
   };
   
   const formatarTipo = (tipo) => {
@@ -62,25 +55,27 @@ function Dashboard() {
   };
 
   const ordenarMovimentos = (movimentos) => {
-    return movimentos.sort((a, b) => {
+    return [...movimentos].sort((a, b) => {
       if (ordenacao.campo === 'data') {
         return ordenacao.direcao === 'asc' 
           ? new Date(a.data) - new Date(b.data)
           : new Date(b.data) - new Date(a.data);
-      } else if (ordenacao.campo === 'nome') {
+      }
+      
+      if (ordenacao.campo === 'nome') {
         const itemA = itens.find(i => i.id === a.itemId)?.nome || '';
         const itemB = itens.find(i => i.id === b.itemId)?.nome || '';
         return ordenacao.direcao === 'asc' 
           ? itemA.localeCompare(itemB)
           : itemB.localeCompare(itemA);
-      } else {
-        if (a[ordenacao.campo] < b[ordenacao.campo]) return ordenacao.direcao === 'asc' ? -1 : 1;
-        if (a[ordenacao.campo] > b[ordenacao.campo]) return ordenacao.direcao === 'asc' ? 1 : -1;
-        return 0;
       }
+      
+      return ordenacao.direcao === 'asc'
+        ? (a[ordenacao.campo] < b[ordenacao.campo] ? -1 : 1)
+        : (a[ordenacao.campo] > b[ordenacao.campo] ? -1 : 1);
     });
   };
-
+  
   useEffect(() => {
     if (movimentos.length > 0) {
       const movimentosOrdenados = ordenarMovimentos([...movimentos]);
@@ -92,12 +87,7 @@ function Dashboard() {
     fetchData();
     
     const interval = setInterval(fetchData, 30000);
-    window.atualizarDashboard = () => setForcarAtualizacao(prev => !prev);
-    
-    return () => {
-      clearInterval(interval);
-      delete window.atualizarDashboard;
-    };
+    return () => clearInterval(interval);
   }, [forcarAtualizacao]);
 
   const formatarData = (data) => {
@@ -113,13 +103,9 @@ function Dashboard() {
 
   if (loading && itens.length === 0) {
     return (
-      <div className="loading-overlay">
-        <div className="loading-spinner">
-          <svg width="50" height="50" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="25" cy="25" r="20" fill="none" stroke="#0033a0" strokeWidth="4" strokeDasharray="80 30">
-              <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="1s" repeatCount="indefinite" />
-            </circle>
-          </svg>
+      <div className={styles.loadingOverlay}>
+        <div className={styles.loadingSpinner}>
+          <div className={styles.spinner}></div>
           <p>Carregando dados do estoque...</p>
         </div>
       </div>
@@ -127,32 +113,33 @@ function Dashboard() {
   }
 
   return (
-    <div className="dashboard">
-      <header className="dashboard-header">
-        <div className="header-content">
-          <div className="logo">
-            <img src="/logo-sicoob.png" alt="Logo Sicoob" className="logo-img" />
-            <span className="logo-text">Sistema de Estoque - Marketing</span>
+    <div className={styles.dashboard}>
+      <header className={styles.dashboardHeader}>
+        <div className={styles.headerContent}>
+          <div className={styles.logoContainer}>
+            <img 
+              src="/logo-sicoob.png" 
+              alt="Logo Sicoob" 
+              className={styles.logoImg} 
+            />
+            <h1 className={styles.logoText}>Sistema de Estoque - Marketing</h1>
           </div>
-          <div className="dashboard-controls">
+          <div className={styles.dashboardControls}>
             {ultimaAtualizacao && (
-              <span className="update-info">
+              <span className={styles.updateInfo}>
                 Última atualização: {formatarData(ultimaAtualizacao)}
               </span>
             )}
             <button 
               onClick={fetchData} 
-              className="btn btn-primary"
+              className={styles.refreshButton}
               disabled={loading}
             >
               {loading ? (
-                <>
-                  <span className="spinner"></span>
-                  Atualizando...
-                </>
+                <div className={styles.spinner}></div>
               ) : (
                 <>
-                  <span className="refresh-icon">↻</span>
+                  <span>↻</span>
                   Atualizar Agora
                 </>
               )}
@@ -161,29 +148,29 @@ function Dashboard() {
         </div>
       </header>
       
-      <main className="main-content">
+      <main className={styles.mainContent}>
         <GraficosEstoque itens={itens} movimentos={movimentos} />
         
-        <section className="dashboard-section">
-          <h2 className="section-title">
-            <span className="icon">📦</span>
+        <section className={styles.dashboardSection}>
+          <h2 className={styles.sectionTitle}>
+            <span>📦</span>
             Resumo do Estoque
           </h2>
-          <div className="stats-grid">
+          <div className={styles.cardsGrid}>
             {itens.map(item => (
               <div 
                 key={item.id} 
-                className={`stat-card ${item.quantidade < 10 ? 'low-stock' : ''}`}
+                className={`${styles.statCard} ${item.quantidade < 10 ? styles.lowStock : ''}`}
               >
-                <h3>
-                  <span className="item-icon">⦿</span>
+                <h3 className={styles.itemName}>
+                  <span>⦿</span>
                   {item.nome}
                 </h3>
-                <div className="item-info">
+                <div className={styles.itemInfo}>
                   <p><strong>Código:</strong> {item.numero}</p>
                   <p>
                     <strong>Quantidade:</strong> 
-                    <span className={`quantidade ${item.quantidade < 10 ? 'text-danger' : ''}`}>
+                    <span className={item.quantidade < 10 ? styles.textDanger : ''}>
                       {item.quantidade}
                     </span>
                   </p>
@@ -194,30 +181,30 @@ function Dashboard() {
           </div>
         </section>
         
-        <section className="dashboard-section">
-          <div className="section-header">
-            <h2 className="section-title">
-              <span className="icon">🔄</span>
+        <section className={styles.dashboardSection}>
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>
+              <span>🔄</span>
               Últimas Movimentações
             </h2>
-            <span className="badge">{movimentos.length} registros</span>
+            <span className={styles.badge}>{movimentos.length} registros</span>
           </div>
           
-          <div className="table-responsive">
+          <div className={styles.tableResponsive}>
             {movimentos.length > 0 ? (
-              <table className="data-table">
+              <table className={styles.dataTable}>
                 <thead>
                   <tr>
-                    <th onClick={() => handleOrdenar('nome')} className="sortable-header">
+                    <th onClick={() => handleOrdenar('nome')} className={styles.sortableHeader}>
                       Item {ordenacao.campo === 'nome' && (ordenacao.direcao === 'asc' ? '↑' : '↓')}
                     </th>
-                    <th onClick={() => handleOrdenar('tipo')} className="sortable-header">
+                    <th onClick={() => handleOrdenar('tipo')} className={styles.sortableHeader}>
                       Tipo {ordenacao.campo === 'tipo' && (ordenacao.direcao === 'asc' ? '↑' : '↓')}
                     </th>
-                    <th onClick={() => handleOrdenar('quantidade')} className="sortable-header">
+                    <th onClick={() => handleOrdenar('quantidade')} className={styles.sortableHeader}>
                       Quantidade {ordenacao.campo === 'quantidade' && (ordenacao.direcao === 'asc' ? '↑' : '↓')}
                     </th>
-                    <th onClick={() => handleOrdenar('data')} className="sortable-header">
+                    <th onClick={() => handleOrdenar('data')} className={styles.sortableHeader}>
                       Data {ordenacao.campo === 'data' && (ordenacao.direcao === 'asc' ? '↑' : '↓')}
                     </th>
                     <th>Ações</th>
@@ -230,7 +217,7 @@ function Dashboard() {
                       <tr key={movimento.id}>
                         <td>{item?.nome || 'N/A'}</td>
                         <td>
-                          <span className={`tipo-movimento ${movimento.tipo.toLowerCase()}`}>
+                          <span className={`${styles.tipoMovimento} ${movimento.tipo.toLowerCase()}`}>
                             {formatarTipo(movimento.tipo)}
                           </span>
                         </td>
@@ -239,9 +226,9 @@ function Dashboard() {
                         <td>
                           <button
                             onClick={() => window.open(`/movimentos/${movimento.id}/impressao`, '_blank')}
-                            className="btn btn-secondary"
+                            className={`${styles.btn} ${styles.btnSecondary}`}
                           >
-                            <span className="print-icon">🖨️</span>
+                            <span>🖨️</span>
                             Imprimir
                           </button>
                         </td>
@@ -251,7 +238,7 @@ function Dashboard() {
                 </tbody>
               </table>
             ) : (
-              <div className="empty-state">
+              <div className={styles.emptyState}>
                 <p>Nenhuma movimentação registrada</p>
               </div>
             )}

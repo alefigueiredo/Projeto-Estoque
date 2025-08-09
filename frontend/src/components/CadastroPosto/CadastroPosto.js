@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import styles from './CadastroPosto.module.css';
 
 function CadastroPosto() {
   const [posto, setPosto] = useState({
