@@ -114,13 +114,13 @@ function Dashboard() {
 
   return (
     <div className={styles.dashboard}>
-      <header className={styles.dashboardHeader}>
+      <header className={styles.header}>
         <div className={styles.headerContent}>
           <div className={styles.logoContainer}>
             <img 
               src="/logo-sicoob.png" 
               alt="Logo Sicoob" 
-              className={styles.logoImg} 
+              className={styles.logo} 
             />
             <h1 className={styles.logoText}>Sistema de Estoque - Marketing</h1>
           </div>
@@ -148,19 +148,23 @@ function Dashboard() {
         </div>
       </header>
       
-      <main className={styles.mainContent}>
-        <GraficosEstoque itens={itens} movimentos={movimentos} />
-        
-        <section className={styles.dashboardSection}>
+      <main className={styles.main}>
+        <section className={styles.section}>
           <h2 className={styles.sectionTitle}>
-            <span>📦</span>
-            Resumo do Estoque
+            <span>📊</span> Visualização do Estoque
+          </h2>
+          <GraficosEstoque itens={itens} movimentos={movimentos} />
+        </section>
+        
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>
+            <span>📦</span> Resumo do Estoque
           </h2>
           <div className={styles.cardsGrid}>
             {itens.map(item => (
               <div 
                 key={item.id} 
-                className={`${styles.statCard} ${item.quantidade < 10 ? styles.lowStock : ''}`}
+                className={`${styles.card} ${item.quantidade < 5 ? styles.lowStock : ''}`}
               >
                 <h3 className={styles.itemName}>
                   <span>⦿</span>
@@ -170,7 +174,7 @@ function Dashboard() {
                   <p><strong>Código:</strong> {item.numero}</p>
                   <p>
                     <strong>Quantidade:</strong> 
-                    <span className={item.quantidade < 10 ? styles.textDanger : ''}>
+                    <span className={item.quantidade < 5 ? styles.textDanger : ''}>
                       {item.quantidade}
                     </span>
                   </p>
@@ -181,18 +185,17 @@ function Dashboard() {
           </div>
         </section>
         
-        <section className={styles.dashboardSection}>
+        <section className={styles.section}>
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>
-              <span>🔄</span>
-              Últimas Movimentações
+              <span>🔄</span> Últimas Movimentações
             </h2>
             <span className={styles.badge}>{movimentos.length} registros</span>
           </div>
           
-          <div className={styles.tableResponsive}>
+          <div className={styles.tableWrapper}>
             {movimentos.length > 0 ? (
-              <table className={styles.dataTable}>
+              <table className={styles.table}>
                 <thead>
                   <tr>
                     <th onClick={() => handleOrdenar('nome')} className={styles.sortableHeader}>
@@ -226,7 +229,7 @@ function Dashboard() {
                         <td>
                           <button
                             onClick={() => window.open(`/movimentos/${movimento.id}/impressao`, '_blank')}
-                            className={`${styles.btn} ${styles.btnSecondary}`}
+                            className={styles.btn}
                           >
                             <span>🖨️</span>
                             Imprimir
