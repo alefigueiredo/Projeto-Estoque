@@ -36,7 +36,7 @@ function Dashboard() {
     return tiposCorretos[tipo] || tipo;
   };
 
-   const fetchData = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
       const [itensResponse, movimentosResponse] = await Promise.all([
@@ -49,21 +49,7 @@ function Dashboard() {
       }
       
       if (movimentosResponse.data?.success) {
-        let movimentosOrdenados = [...movimentosResponse.data.data];
-        
-        // Aplicar ordenação
-        movimentosOrdenados.sort((a, b) => {
-          if (ordenacao.campo === 'data') {
-            return ordenacao.direcao === 'asc' 
-              ? new Date(a.data) - new Date(b.data)
-              : new Date(b.data) - new Date(a.data);
-          } else {
-            if (a[ordenacao.campo] < b[ordenacao.campo]) return ordenacao.direcao === 'asc' ? -1 : 1;
-            if (a[ordenacao.campo] > b[ordenacao.campo]) return ordenacao.direcao === 'asc' ? 1 : -1;
-            return 0;
-          }
-        });
-        
+        const movimentosOrdenados = ordenarMovimentos([...movimentosResponse.data.data]);
         setMovimentos(movimentosOrdenados.slice(0, 5));
       }
       
@@ -75,19 +61,29 @@ function Dashboard() {
     }
   };
 
+  const ordenarMovimentos = (movimentos) => {
+    return movimentos.sort((a, b) => {
+      if (ordenacao.campo === 'data') {
+        return ordenacao.direcao === 'asc' 
+          ? new Date(a.data) - new Date(b.data)
+          : new Date(b.data) - new Date(a.data);
+      } else if (ordenacao.campo === 'nome') {
+        const itemA = itens.find(i => i.id === a.itemId)?.nome || '';
+        const itemB = itens.find(i => i.id === b.itemId)?.nome || '';
+        return ordenacao.direcao === 'asc' 
+          ? itemA.localeCompare(itemB)
+          : itemB.localeCompare(itemA);
+      } else {
+        if (a[ordenacao.campo] < b[ordenacao.campo]) return ordenacao.direcao === 'asc' ? -1 : 1;
+        if (a[ordenacao.campo] > b[ordenacao.campo]) return ordenacao.direcao === 'asc' ? 1 : -1;
+        return 0;
+      }
+    });
+  };
+
   useEffect(() => {
     if (movimentos.length > 0) {
-      const movimentosOrdenados = [...movimentos].sort((a, b) => {
-        if (ordenacao.campo === 'data') {
-          return ordenacao.direcao === 'asc' 
-            ? new Date(a.data) - new Date(b.data)
-            : new Date(b.data) - new Date(a.data);
-        } else {
-          if (a[ordenacao.campo] < b[ordenacao.campo]) return ordenacao.direcao === 'asc' ? -1 : 1;
-          if (a[ordenacao.campo] > b[ordenacao.campo]) return ordenacao.direcao === 'asc' ? 1 : -1;
-          return 0;
-        }
-      });
+      const movimentosOrdenados = ordenarMovimentos([...movimentos]);
       setMovimentos(movimentosOrdenados.slice(0, 5));
     }
   }, [ordenacao]);
@@ -135,6 +131,7 @@ function Dashboard() {
       <header className="dashboard-header">
         <div className="header-content">
           <div className="logo">
+            <img src="/logo-sicoob.png" alt="Logo Sicoob" className="logo-img" />
             <span className="logo-text">Sistema de Estoque - Marketing</span>
           </div>
           <div className="dashboard-controls">
@@ -150,10 +147,15 @@ function Dashboard() {
             >
               {loading ? (
                 <>
-                  <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                  <span className="sr-only">Atualizando...</span>
+                  <span className="spinner"></span>
+                  Atualizando...
                 </>
-              ) : 'Atualizar Agora'}
+              ) : (
+                <>
+                  <span className="refresh-icon">↻</span>
+                  Atualizar Agora
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -163,17 +165,28 @@ function Dashboard() {
         <GraficosEstoque itens={itens} movimentos={movimentos} />
         
         <section className="dashboard-section">
-          <h2 className="section-title">Resumo do Estoque</h2>
+          <h2 className="section-title">
+            <span className="icon">📦</span>
+            Resumo do Estoque
+          </h2>
           <div className="stats-grid">
             {itens.map(item => (
               <div 
                 key={item.id} 
                 className={`stat-card ${item.quantidade < 10 ? 'low-stock' : ''}`}
               >
-                <h3>{item.nome}</h3>
+                <h3>
+                  <span className="item-icon">⦿</span>
+                  {item.nome}
+                </h3>
                 <div className="item-info">
                   <p><strong>Código:</strong> {item.numero}</p>
-                  <p><strong>Quantidade:</strong> {item.quantidade}</p>
+                  <p>
+                    <strong>Quantidade:</strong> 
+                    <span className={`quantidade ${item.quantidade < 10 ? 'text-danger' : ''}`}>
+                      {item.quantidade}
+                    </span>
+                  </p>
                   <p><strong>Atualizado em:</strong> {formatarData(item.updatedAt)}</p>
                 </div>
               </div>
@@ -183,19 +196,30 @@ function Dashboard() {
         
         <section className="dashboard-section">
           <div className="section-header">
-            <h2 className="section-title">Últimas Movimentações</h2>
+            <h2 className="section-title">
+              <span className="icon">🔄</span>
+              Últimas Movimentações
+            </h2>
             <span className="badge">{movimentos.length} registros</span>
           </div>
           
-          <div className="table-container">
+          <div className="table-responsive">
             {movimentos.length > 0 ? (
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th onClick={() => handleOrdenar('nome')} className="sortable-header">Item</th>
-                    <th onClick={() => handleOrdenar('tipo')} className="sortable-header">Tipo</th>
-                    <th onClick={() => handleOrdenar('quantidade')} className="sortable-header">Quantidade</th>
-                    <th onClick={() => handleOrdenar('data')} className="sortable-header">Data</th>
+                    <th onClick={() => handleOrdenar('nome')} className="sortable-header">
+                      Item {ordenacao.campo === 'nome' && (ordenacao.direcao === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th onClick={() => handleOrdenar('tipo')} className="sortable-header">
+                      Tipo {ordenacao.campo === 'tipo' && (ordenacao.direcao === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th onClick={() => handleOrdenar('quantidade')} className="sortable-header">
+                      Quantidade {ordenacao.campo === 'quantidade' && (ordenacao.direcao === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th onClick={() => handleOrdenar('data')} className="sortable-header">
+                      Data {ordenacao.campo === 'data' && (ordenacao.direcao === 'asc' ? '↑' : '↓')}
+                    </th>
                     <th>Ações</th>
                   </tr>
                 </thead>
@@ -213,16 +237,13 @@ function Dashboard() {
                         <td>{movimento.quantidade}</td>
                         <td>{formatarData(movimento.data)}</td>
                         <td>
-                          <Link 
-                            to={`/movimentos/${movimento.id}/impressao`}
-                            className="btn btn-sm btn-secondary"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              window.open(`/movimentos/${movimento.id}/impressao`, '_blank');
-                            }}
+                          <button
+                            onClick={() => window.open(`/movimentos/${movimento.id}/impressao`, '_blank')}
+                            className="btn btn-secondary"
                           >
+                            <span className="print-icon">🖨️</span>
                             Imprimir
-                          </Link>
+                          </button>
                         </td>
                       </tr>
                     );
