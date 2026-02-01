@@ -1,0 +1,50 @@
+
+.impressao-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: var(--spacing-md);
+}
+
+.comprovante {
+  background: white;
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.info-section {
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--sicoob-medium-gray);
+}
+
+.assinaturas {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--spacing-xl);
+}
+
+.assinatura {
+  text-align: center;
+  width: 45%;
+}
+
+.btn-imprimir {
+  margin-bottom: var(--spacing-md);
+}
+
+@media print {
+  .no-print {
+    display: none;
+  }
+  
+  body {
+    background: none;
+    padding: 0;
+  }
+  
+  .comprovante {
+    box-shadow: none;
+    padding: 0;
+  }
+}

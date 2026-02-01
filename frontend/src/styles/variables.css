@@ -1,0 +1,19 @@
+:root {
+  /* Cores Sicoob */
+  --sicoob-blue: #0033a0;
+  --sicoob-green: #00a859;
+  --sicoob-orange: #f68b1f;
+  --sicoob-dark-blue: #002366;
+  --sicoob-light-blue: #0077c8;
+  
+  /* Espaçamentos */
+  --spacing-xs: 0.5rem;
+  --spacing-sm: 1rem;
+  --spacing-md: 1.5rem;
+  --spacing-lg: 2rem;
+  
+  /* Bordas */
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+}

@@ -1,0 +1,54 @@
+:root {
+  /* Cores Sicoob */
+  --primary: #0033a0;
+  --secondary: #00a859;
+  --accent: #f68b1f;
+  --danger: #e31937;
+  --light: #f5f7fa;
+  --dark: #2d3748;
+  
+  /* Espaçamentos */
+  --space-xs: 0.5rem;
+  --space-sm: 1rem;
+  --space-md: 1.5rem;
+  --space-lg: 2rem;
+  --space-xl: 3rem;
+  
+  /* Tipografia */
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.5rem;
+  
+  /* Bordas */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  
+  /* Sombras */
+  --shadow-sm: 0 1px 3px rgba(0, 51, 160, 0.12);
+  --shadow-md: 0 4px 6px rgba(0, 51, 160, 0.15);
+  --shadow-lg: 0 10px 15px rgba(0, 51, 160, 0.2);
+}
+
+/* Reset básico */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  line-height: 1.5;
+  color: var(--dark);
+  background-color: var(--light);
+}
+
+/* Layout Container */
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--space-md);
+}

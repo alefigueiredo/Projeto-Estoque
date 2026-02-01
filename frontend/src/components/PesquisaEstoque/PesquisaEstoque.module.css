@@ -1,0 +1,40 @@
+
+.pesquisa-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  background: white;
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.search-box {
+  position: relative;
+  margin-bottom: var(--spacing-md);
+}
+
+.search-input {
+  width: 100%;
+  padding-left: 35px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.estoque-table tr.low-stock td {
+  color: var(--sicoob-orange);
+  font-weight: 500;
+}
+
+.sortable-header {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sortable-header:hover {
+  background-color: var(--sicoob-dark-blue);
+}

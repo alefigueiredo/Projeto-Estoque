@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
+import styles from './ImpressaoMovimento.module.css';
 
 // Definição local da URL base (caso não queira usar o arquivo config)
 const API_BASE_URL = 'http://localhost:5001/api';
